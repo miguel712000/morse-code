@@ -1,0 +1,11 @@
+nasm -f win64 morse_uefi.asm -o morse_uefi.obj
+lld-link /subsystem:efi_application /entry:efi_main /out:BOOTX64.EFI morse_uefi.obj
+
+truncate -s 64M esp.img
+mkfs.vfat -F 32 -n ESP esp.img
+mmd   -i esp.img ::/EFI
+mmd   -i esp.img ::/EFI/BOOT
+
+mcopy -i esp.img BOOTX64.EFI ::/EFI/BOOT/
+
+qemu-system-x86_64   -machine q35 -m 256   -bios /usr/share/OVMF/OVMF_CODE.fd   -drive file=esp.img,format=raw,if=virtio   -audiodev pa,id=snd0   -machine pcspk-audiodev=snd0 -serial stdio
